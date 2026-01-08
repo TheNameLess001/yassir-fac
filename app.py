@@ -5,17 +5,15 @@ import base64
 from datetime import datetime
 import os
 
-# --- CONFIGURATION CHARTE GRAPHIQUE (NOUVEAU LOGO VIOLET) ---
-# Remplace ce code HEX par le violet exact si nécessaire (ex: #5E17EB, #4B0082...)
+# --- 1. CONFIGURATION CHARTE GRAPHIQUE (VIOLET YASSIR) ---
 YASSIR_PURPLE = "#6f42c1"  
-YASSIR_BLACK = "#000000"
 YASSIR_GRAY = "#F8F9FA"
-LOGO_PATH = "logo.png"  # Assurez-vous que votre fichier logo est dans le même dossier
+LOGO_PATH = "logo.png"
 
-# --- SETUP PAGE ---
+# --- 2. SETUP PAGE ---
 st.set_page_config(page_title="Générateur Factures Yassir", page_icon="🟣", layout="wide")
 
-# Injection CSS pour le thème Violet
+# CSS : Interface Streamlit aux couleurs de Yassir
 st.markdown(f"""
     <style>
     .main {{ background-color: {YASSIR_GRAY}; }}
@@ -26,117 +24,116 @@ st.markdown(f"""
     }}
     .stButton>button:hover {{ background-color: #5a32a3; color: white; }}
     .stSidebar {{ background-color: #FFFFFF; border-right: 2px solid {YASSIR_PURPLE}; }}
-    .metric-box {{ border: 1px solid {YASSIR_PURPLE}; border-radius: 5px; padding: 10px; text-align: center; }}
     </style>
 """, unsafe_allow_html=True)
 
-# --- MOTEUR PDF (FPDF) ---
+# --- 3. MOTEUR PDF (DESIGN FIXE) ---
 class PDFTemplate(FPDF):
     def header(self):
-        # 1. LOGO (Importation auto si présent)
+        # A. LOGO OU TEXTE (Coin Haut Gauche)
         if os.path.exists(LOGO_PATH):
             self.image(LOGO_PATH, 10, 8, 30)
-            self.ln(25)
         else:
-            # Fallback Texte Violet si pas d'image
             self.set_font('Arial', 'B', 24)
-            # Conversion Hex -> RGB pour FPDF
-            r, g, b = tuple(int(YASSIR_PURPLE.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+            r, g, b = hex_to_rgb(YASSIR_PURPLE)
             self.set_text_color(r, g, b)
-            self.cell(50, 10, 'Yassir', 0, 1, 'L')
-            self.ln(5)
+            self.cell(50, 15, 'Yassir', 0, 0, 'L')
         
-        # 2. INFOS YASSIR (Fixes)
-        self.set_font('Arial', 'B', 10)
+        # B. ÉMETTEUR (YASSIR) - Juste en dessous du logo
+        self.set_xy(10, 25)
+        self.set_font('Arial', 'B', 9)
         self.set_text_color(0)
-        self.cell(0, 5, 'YASSIR MAROC', 0, 1, 'L')
+        self.cell(0, 4, 'YASSIR MAROC', 0, 1, 'L')
         self.set_font('Arial', '', 8)
-        self.cell(0, 5, 'VILLA 269 LOTISSEMENT MANDARONA', 0, 1, 'L')
-        self.cell(0, 5, 'SIDI MAAROUF CASABLANCA - Maroc', 0, 1, 'L')
-        self.cell(0, 5, 'ICE: 002148105000084', 0, 1, 'L')
-        
-        # Ligne de séparation Violette
-        r, g, b = tuple(int(YASSIR_PURPLE.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+        self.set_text_color(80)
+        self.cell(0, 4, 'VILLA 269 LOTISSEMENT MANDARONA', 0, 1, 'L')
+        self.cell(0, 4, 'SIDI MAAROUF CASABLANCA - Maroc', 0, 1, 'L')
+        self.cell(0, 4, 'ICE: 002148105000084', 0, 1, 'L')
+
+        # C. TRAIT DE SÉPARATION
+        self.set_xy(10, 45)
+        r, g, b = hex_to_rgb(YASSIR_PURPLE)
         self.set_draw_color(r, g, b)
         self.set_line_width(0.5)
-        self.line(10, self.get_y()+5, 200, self.get_y()+5)
-        self.ln(10)
+        self.line(10, 48, 200, 48)
 
     def footer(self):
-        self.set_y(-25)
+        self.set_y(-20)
         self.set_font('Arial', '', 7)
-        self.set_text_color(100)
-        # Footer légal identique à l'exemple
-        self.multi_cell(0, 4, "YASSIR MAROC SARL au capital de 2,000,000 DH\nVILLA 269 LOTISSEMENT MANDARONA SIDI MAAROUF CASABLANCA - Maroc\nICE N°002148105000084 - RC 413733 - IF 26164744", 0, 'C')
+        self.set_text_color(120)
+        self.multi_cell(0, 3, "YASSIR MAROC SARL au capital de 2,000,000 DH\nVILLA 269 LOTISSEMENT MANDARONA SIDI MAAROUF CASABLANCA - Maroc\nICE N°002148105000084 - RC 413733 - IF 26164744", 0, 'C')
         
-        # Numéro de page en violet
-        r, g, b = tuple(int(YASSIR_PURPLE.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+        # Numéro de page
+        self.set_y(-10)
+        r, g, b = hex_to_rgb(YASSIR_PURPLE)
         self.set_text_color(r, g, b)
-        self.cell(0, 10, f'Page {self.page_no()}/{{nb}}', 0, 0, 'C')
+        self.set_font('Arial', 'B', 8)
+        self.cell(0, 10, f'Page {self.page_no()}/{{nb}}', 0, 0, 'R')
 
-# --- FONCTION GENERATION FACTURE ---
+def hex_to_rgb(hex_code):
+    return tuple(int(hex_code.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+
+# --- 4. FONCTION FACTURE (CORRIGÉE) ---
 def generate_invoice_pdf(client_data, totals):
     pdf = PDFTemplate()
     pdf.alias_nb_pages()
     pdf.add_page()
-    
-    # Couleur Violette RGB
-    r, g, b = tuple(int(YASSIR_PURPLE.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+    r, g, b = hex_to_rgb(YASSIR_PURPLE)
 
-    # --- EN-TÊTE FACTURE ---
-    pdf.set_y(20)
-    pdf.set_x(120)
+    # === BLOC 1 : INFOS FACTURE (DROITE) ===
+    # Position absolue Y=55
+    pdf.set_xy(110, 55)
     pdf.set_font('Arial', 'B', 14)
     pdf.set_text_color(r, g, b)
-    pdf.cell(80, 8, "FACTURE COMMISSION", 0, 1, 'R')
+    pdf.cell(90, 8, "FACTURE COMMISSION", 0, 1, 'R')
     
-    pdf.set_x(120)
-    pdf.set_text_color(0)
+    pdf.set_x(110)
     pdf.set_font('Arial', 'B', 10)
-    pdf.cell(80, 6, f"N°: {client_data['ref']}", 0, 1, 'R')
+    pdf.set_text_color(0)
+    pdf.cell(90, 6, f"N°: {client_data['ref']}", 0, 1, 'R')
     
-    pdf.set_x(120)
+    pdf.set_x(110)
     pdf.set_font('Arial', '', 10)
-    pdf.cell(80, 6, f"Date: {datetime.now().strftime('%d/%m/%Y')}", 0, 1, 'R')
+    pdf.cell(90, 6, f"Date: {datetime.now().strftime('%d/%m/%Y')}", 0, 1, 'R')
 
-    pdf.ln(15)
-
-    # --- ZONE CLIENT (Modifiable via Sidebar) ---
-    start_y = pdf.get_y()
+    # === BLOC 2 : CLIENT (GAUCHE) ===
+    # Position absolue Y=55 (Même hauteur que le bloc droite)
+    start_y = 55
     
-    # Fond gris clair
-    pdf.set_fill_color(248, 248, 248)
-    pdf.set_draw_color(220, 220, 220)
-    pdf.rect(10, start_y, 90, 40, 'F')
+    # Fond Gris + Barre Violette
+    pdf.set_fill_color(248, 248, 248) # Gris très clair
+    pdf.set_draw_color(230, 230, 230) # Bordure grise
+    pdf.rect(10, start_y, 90, 35, 'FD') # Rectangle de fond
     
-    # Barre verticale violette (Marque du nouveau design)
-    pdf.set_fill_color(r, g, b)
-    pdf.rect(10, start_y, 2, 40, 'F')
+    pdf.set_fill_color(r, g, b) # Violet
+    pdf.rect(10, start_y, 2, 35, 'F') # Petite barre déco
     
-    pdf.set_xy(15, start_y + 5)
+    # Texte Client (Positionné RELATIVEMENT au start_y)
+    pdf.set_xy(15, start_y + 3)
     pdf.set_font('Arial', 'B', 10)
     pdf.set_text_color(0)
     pdf.cell(80, 5, f"{client_data['name']}", 0, 1, 'L')
     
+    pdf.set_xy(15, start_y + 9)
     pdf.set_font('Arial', '', 9)
-    pdf.set_x(15)
+    pdf.set_text_color(50)
     pdf.cell(80, 5, f"{client_data['address']}", 0, 1, 'L')
-    pdf.set_x(15)
+    pdf.set_xy(15, start_y + 14)
     pdf.cell(80, 5, f"{client_data['city']}", 0, 1, 'L')
-    pdf.set_x(15)
+    pdf.set_xy(15, start_y + 19)
     pdf.cell(80, 5, f"ICE: {client_data['ice']}", 0, 1, 'L')
     if client_data['rc']:
-        pdf.set_x(15)
+        pdf.set_xy(15, start_y + 24)
         pdf.cell(80, 5, f"RC: {client_data['rc']}", 0, 1, 'L')
 
-    pdf.ln(25)
-
-    # --- TABLEAU PRINCIPAL ---
-    # En-tête Violet
+    # === BLOC 3 : TABLEAU (EN BAS) ===
+    # On force le curseur en dessous des deux blocs précédents
+    pdf.set_y(100)
+    
+    # Header Tableau
     pdf.set_fill_color(r, g, b)
     pdf.set_text_color(255)
     pdf.set_font('Arial', 'B', 9)
-    
     cols = [60, 40, 40, 50]
     headers = ['Période', 'Ventes TTC', 'Taux Comm.', 'Commission HT']
     
@@ -144,101 +141,104 @@ def generate_invoice_pdf(client_data, totals):
         pdf.cell(cols[i], 10, h, 0, 0, 'C', 1)
     pdf.ln()
     
-    # Données
+    # Ligne de Données
     pdf.set_text_color(0)
     pdf.set_font('Arial', '', 9)
     pdf.set_fill_color(255)
+    pdf.set_draw_color(200)
     
-    # Une seule ligne récapitulative (comme l'exemple O'Tacos)
-    pdf.cell(cols[0], 10, f"{client_data['period']}", 'B', 0, 'C')
-    pdf.cell(cols[1], 10, f"{totals['sales']:,.2f}", 'B', 0, 'C')
-    pdf.cell(cols[2], 10, f"{client_data['rate']}%", 'B', 0, 'C')
-    pdf.cell(cols[3], 10, f"{totals['comm_ht']:,.2f}", 'B', 1, 'C')
+    h_row = 10
+    pdf.cell(cols[0], h_row, f"{client_data['period']}", 'B', 0, 'C')
+    pdf.cell(cols[1], h_row, f"{totals['sales']:,.2f}", 'B', 0, 'C')
+    pdf.cell(cols[2], h_row, f"{client_data['rate']}%", 'B', 0, 'C')
+    pdf.cell(cols[3], h_row, f"{totals['comm_ht']:,.2f}", 'B', 1, 'C')
 
-    pdf.ln(10)
-
-    # --- TOTAUX (Alignés à droite) ---
-    x_start = 110
+    # === BLOC 4 : TOTAUX ===
+    pdf.ln(5)
+    x_totals = 110
     
-    def add_total_line(label, value, bg_color=False, is_bold=False):
-        pdf.set_x(x_start)
-        pdf.set_font('Arial', 'B' if is_bold else '', 9)
-        if bg_color:
+    def print_total(label, value, bold=False, bg=False):
+        pdf.set_x(x_totals)
+        pdf.set_font('Arial', 'B' if bold else '', 9)
+        pdf.set_text_color(0)
+        
+        if bg:
             pdf.set_fill_color(r, g, b)
             pdf.set_text_color(255)
-            pdf.cell(50, 9, label, 0, 0, 'L', 1)
-            pdf.cell(40, 9, f"{value:,.2f} DH", 0, 1, 'R', 1)
+            pdf.cell(50, 8, label, 0, 0, 'L', 1)
+            pdf.cell(40, 8, f"{value:,.2f} DH", 0, 1, 'R', 1)
         else:
-            pdf.set_text_color(0)
-            pdf.cell(50, 7, label, 1, 0, 'L')
-            pdf.cell(40, 7, f"{value:,.2f}", 1, 1, 'R')
+            pdf.cell(50, 7, label, 0, 0, 'L') # Bordure 0 pour design épuré
+            pdf.cell(40, 7, f"{value:,.2f}", 0, 1, 'R')
 
-    add_total_line("Total Commission HT", totals['comm_ht'])
-    add_total_line("TVA 20%", totals['tva'])
-    add_total_line("Total Facture TTC", totals['invoice_ttc'], is_bold=True)
-    add_total_line("Total du panier", totals['sales'])
-    
+    print_total("Total Commission HT", totals['comm_ht'])
+    print_total("TVA 20%", totals['tva'])
+    # Trait fin pour séparer
+    pdf.set_draw_color(200)
+    pdf.line(x_totals, pdf.get_y(), 200, pdf.get_y())
+    print_total("Total Facture TTC", totals['invoice_ttc'], bold=True)
     pdf.ln(2)
-    # Net à Payer en Violet
-    add_total_line("NET À PAYER", totals['net_pay'], bg_color=True, is_bold=True)
+    print_total("NET À PAYER", totals['net_pay'], bold=True, bg=True)
 
-    # --- PIED DE PAGE EXPLICATIF ---
-    pdf.ln(15)
-    pdf.set_text_color(0)
-    pdf.set_font('Arial', 'I', 9)
-    pdf.cell(0, 6, f"Arrêté la présente facture à la somme de : {totals['net_pay']:,.2f} Dirhams", 0, 1, 'L')
-    pdf.cell(0, 6, "Mode de règlement: Virement bancaire", 0, 1, 'L')
+    # === BLOC 5 : INFO LÉGALE ===
+    pdf.set_y(160)
+    pdf.set_font('Arial', 'I', 8)
+    pdf.set_text_color(100)
+    pdf.cell(0, 5, f"Arrêté la présente facture à la somme de : {totals['net_pay']:,.2f} Dirhams", 0, 1, 'L')
+    pdf.cell(0, 5, "Mode de règlement : Virement bancaire sous 30 jours", 0, 1, 'L')
 
     return pdf.output(dest='S').encode('latin-1')
 
-# --- FONCTION ANNEXE DÉTAILLÉE ---
+# --- 5. FONCTION DÉTAIL ---
 def generate_detail_pdf(client_data, df_detail, mapping):
     pdf = PDFTemplate()
     pdf.alias_nb_pages()
     pdf.add_page()
-    
-    r, g, b = tuple(int(YASSIR_PURPLE.lstrip('#')[i:i+2], 16) for i in (0, 2, 4))
+    r, g, b = hex_to_rgb(YASSIR_PURPLE)
 
     # Titre
-    pdf.set_font('Arial', 'B', 16)
+    pdf.set_y(55)
+    pdf.set_font('Arial', 'B', 14)
     pdf.set_text_color(r, g, b)
-    pdf.cell(0, 10, f"DÉTAIL DES COMMANDES", 0, 1, 'C')
-    pdf.set_font('Arial', '', 10)
-    pdf.set_text_color(0)
-    pdf.cell(0, 8, f"Période : {client_data['period']}", 0, 1, 'C')
-    pdf.ln(10)
+    pdf.cell(0, 10, f"DÉTAIL DES COMMANDES - {client_data['period']}", 0, 1, 'C')
+    pdf.ln(5)
 
-    # Header Tableau
-    pdf.set_fill_color(240, 240, 240)
+    # Table Header
+    pdf.set_fill_color(245, 245, 245)
     pdf.set_font('Arial', 'B', 8)
+    pdf.set_text_color(0)
     
-    cols = ['Date', 'ID Commande', 'Montant', 'Statut']
+    cols = ['Date', 'ID Commande', 'Montant TTC', 'Statut']
     w = [40, 60, 40, 50]
+    
+    # Centrer le tableau
+    x_start = (210 - sum(w)) / 2
+    pdf.set_x(x_start)
     
     for i, c in enumerate(cols):
         pdf.cell(w[i], 8, c, 1, 0, 'C', 1)
     pdf.ln()
 
-    # Body
+    # Table Body
     pdf.set_font('Arial', '', 8)
+    
     for _, row in df_detail.iterrows():
-        # Extraction sécurisée via le mapping
-        d = str(row[mapping['date']])[:10]
-        i = str(row[mapping['id']])
-        # Nettoyage montant
+        # Parsing data
+        date_val = str(row[mapping['date']])[:10]
+        id_val = str(row[mapping['id']])
         try:
-            m_raw = str(row[mapping['amount']]).replace(',','.').replace('MAD','').strip()
-            m = float(m_raw)
-            m_str = f"{m:,.2f}"
+            raw_amt = str(row[mapping['amount']]).replace(',','.').replace('MAD','').strip()
+            amt_val = float(raw_amt)
+            amt_str = f"{amt_val:,.2f}"
         except:
-            m_str = "0.00"
-            
-        s = str(row[mapping['status']]) if mapping['status'] != 'Aucun' else '-'
+            amt_str = "0.00"
+        stat_val = str(row[mapping['status']]) if mapping['status'] != 'Aucun' else '-'
 
-        pdf.cell(w[0], 7, d, 1, 0, 'C')
-        pdf.cell(w[1], 7, i, 1, 0, 'C')
-        pdf.cell(w[2], 7, m_str, 1, 0, 'R')
-        pdf.cell(w[3], 7, s, 1, 1, 'C')
+        pdf.set_x(x_start)
+        pdf.cell(w[0], 6, date_val, 1, 0, 'C')
+        pdf.cell(w[1], 6, id_val, 1, 0, 'C')
+        pdf.cell(w[2], 6, amt_str, 1, 0, 'R')
+        pdf.cell(w[3], 6, stat_val, 1, 1, 'C')
 
     return pdf.output(dest='S').encode('latin-1')
 
@@ -247,53 +247,53 @@ def generate_detail_pdf(client_data, df_detail, mapping):
 # INTERFACE STREAMLIT
 # ==========================================
 
-# --- SIDEBAR : INFOS CLIENT ---
-st.sidebar.image(LOGO_PATH) if os.path.exists(LOGO_PATH) else st.sidebar.title("🟣 Yassir")
-st.sidebar.markdown("### 📝 Infos Partenaire (Client)")
-st.sidebar.info("Remplissez ici les infos qui apparaîtront sur la facture.")
+# --- SIDEBAR ---
+if os.path.exists(LOGO_PATH):
+    st.sidebar.image(LOGO_PATH, width=150)
+st.sidebar.markdown("## ⚙️ Paramètres Client")
+st.sidebar.caption("Modifiez ces informations pour qu'elles s'affichent sur la facture.")
 
-c_name = st.sidebar.text_input("Nom / Raison Sociale", "BLUE TACOS")
+c_name = st.sidebar.text_input("Raison Sociale", "BLUE TACOS")
 c_addr = st.sidebar.text_input("Adresse", "BD MOHAMMED VI")
 c_city = st.sidebar.text_input("Ville", "CASABLANCA")
-c_ice = st.sidebar.text_input("ICE Client", "003...")
-c_rc = st.sidebar.text_input("RC Client", "")
+c_ice = st.sidebar.text_input("ICE", "003...")
+c_rc = st.sidebar.text_input("RC", "")
 
-st.sidebar.markdown("### 📅 Période & Facturation")
-c_period = st.sidebar.text_input("Période concernée", "NOVEMBRE 2025")
-c_ref = st.sidebar.text_input("Numéro Facture", f"F-{datetime.now().strftime('%Y%m')}-001")
-c_rate = st.sidebar.number_input("Taux de Commission (%)", value=14.0, step=0.5)
+st.sidebar.markdown("---")
+st.sidebar.markdown("## 📅 Facturation")
+c_period = st.sidebar.text_input("Période", "NOVEMBRE 2025")
+c_ref = st.sidebar.text_input("N° Facture", f"F-{datetime.now().strftime('%Y%m')}-001")
+c_rate = st.sidebar.number_input("Taux Commission (%)", value=14.0, step=0.5)
 
-# --- ZONE PRINCIPALE ---
+
+# --- MAIN ---
 st.title("Générateur de Factures Partenaires")
-st.markdown("Importez le fichier CSV (`Detail_Commandes...`) pour générer automatiquement : \n1. **La Facture** (Format O'Tacos)\n2. **Le Détail** des opérations.")
+st.markdown("Solution automatisée pour générer les factures de commission Yassir.")
 
-uploaded_file = st.file_uploader("📂 Déposez votre fichier CSV ici", type=['csv'])
+uploaded_file = st.file_uploader("📂 Importez votre fichier CSV (Détail Commandes)", type=['csv'])
 
 if uploaded_file:
     try:
         df = pd.read_csv(uploaded_file, sep=None, engine='python')
-        st.success(f"✅ Fichier chargé : {len(df)} commandes.")
+        st.success(f"Fichier chargé : {len(df)} lignes.")
         
-        with st.expander("👀 Voir les premières lignes du fichier"):
+        with st.expander("Afficher les données brutes"):
             st.dataframe(df.head())
 
-        st.markdown("### 🔗 Configuration des Colonnes")
-        st.caption("Sélectionnez les colonnes correspondantes dans votre fichier CSV.")
+        st.subheader("🔗 Mapping des Colonnes")
+        st.caption("Associez les colonnes de votre CSV aux champs requis.")
         
         cols = df.columns.tolist()
         c1, c2, c3, c4 = st.columns(4)
-        
-        # Selectbox intelligentes
         col_date = c1.selectbox("Date", cols, index=0)
         col_id = c2.selectbox("ID Commande", cols, index=1 if len(cols)>1 else 0)
-        col_amt = c3.selectbox("Montant (TTC)", cols, index=2 if len(cols)>2 else 0)
-        col_stat = c4.selectbox("Statut (Optionnel)", ["Aucun"] + cols)
+        col_amt = c3.selectbox("Montant", cols, index=2 if len(cols)>2 else 0)
+        col_stat = c4.selectbox("Statut (Opt.)", ["Aucun"] + cols)
 
-        # --- CALCULS ---
-        # Nettoyage de la colonne montant
+        # Calculs
         try:
-            clean_series = df[col_amt].astype(str).str.replace('MAD','').str.replace(' ','').str.replace(',','.')
-            df['clean_amount'] = pd.to_numeric(clean_series, errors='coerce').fillna(0)
+            clean_s = df[col_amt].astype(str).str.replace('MAD','').str.replace(' ','').str.replace(',','.')
+            df['clean_amount'] = pd.to_numeric(clean_s, errors='coerce').fillna(0)
             
             total_sales = df['clean_amount'].sum()
             comm_ht = total_sales * (c_rate / 100)
@@ -301,53 +301,32 @@ if uploaded_file:
             invoice_ttc = comm_ht + tva
             net_pay = total_sales - invoice_ttc
             
-            # Données structurées pour PDF
-            totals = {
-                'sales': total_sales,
-                'comm_ht': comm_ht,
-                'tva': tva,
-                'invoice_ttc': invoice_ttc,
-                'net_pay': net_pay
-            }
-            client_data = {
-                'name': c_name, 'address': c_addr, 'city': c_city, 
-                'ice': c_ice, 'rc': c_rc, 'period': c_period, 
-                'ref': c_ref, 'rate': c_rate
-            }
-            mapping = {
-                'date': col_date, 'id': col_id, 'amount': col_amt, 'status': col_stat
-            }
+            totals = {'sales': total_sales, 'comm_ht': comm_ht, 'tva': tva, 'invoice_ttc': invoice_ttc, 'net_pay': net_pay}
+            client_data = {'name': c_name, 'address': c_addr, 'city': c_city, 'ice': c_ice, 'rc': c_rc, 'period': c_period, 'ref': c_ref, 'rate': c_rate}
+            mapping = {'date': col_date, 'id': col_id, 'amount': col_amt, 'status': col_stat}
 
-            # Affichage des métriques
+            # KPI
             st.markdown("---")
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("Ventes Totales", f"{total_sales:,.2f}")
-            m2.metric("Commission HT", f"{comm_ht:,.2f}")
-            m3.metric("Facture Yassir (TTC)", f"{invoice_ttc:,.2f}")
-            m4.metric("Net à Verser Partenaire", f"{net_pay:,.2f}", delta_color="normal")
+            k1, k2, k3, k4 = st.columns(4)
+            k1.metric("Ventes", f"{total_sales:,.2f}")
+            k2.metric("Commission HT", f"{comm_ht:,.2f}")
+            k3.metric("Facture Yassir", f"{invoice_ttc:,.2f}")
+            k4.metric("Net Partenaire", f"{net_pay:,.2f}")
 
-            # --- BOUTONS GENERATION ---
-            st.markdown("### 🖨️ Édition des Documents")
+            # Boutons
+            st.markdown("### 📥 Téléchargements")
+            b1, b2 = st.columns(2)
             
-            col_btn1, col_btn2 = st.columns(2)
+            pdf1 = generate_invoice_pdf(client_data, totals)
+            b64_1 = base64.b64encode(pdf1).decode()
+            b1.markdown(f'<a href="data:application/pdf;base64,{b64_1}" download="Facture_{c_ref}.pdf"><button style="background-color:{YASSIR_PURPLE};color:white;border:none;padding:15px;border-radius:10px;width:100%;font-weight:bold;cursor:pointer;">📄 TÉLÉCHARGER FACTURE</button></a>', unsafe_allow_html=True)
             
-            # PDF 1
-            pdf_inv = generate_invoice_pdf(client_data, totals)
-            b64_inv = base64.b64encode(pdf_inv).decode()
-            href_inv = f'<a href="data:application/octet-stream;base64,{b64_inv}" download="Facture_{c_ref}.pdf"><button style="background-color:{YASSIR_PURPLE};color:white;border:none;padding:12px;border-radius:8px;width:100%;font-weight:bold;cursor:pointer;">📥 Télécharger la Facture (PDF)</button></a>'
-            col_btn1.markdown(href_inv, unsafe_allow_html=True)
-            
-            # PDF 2
-            pdf_det = generate_detail_pdf(client_data, df, mapping)
-            b64_det = base64.b64encode(pdf_det).decode()
-            href_det = f'<a href="data:application/octet-stream;base64,{b64_det}" download="Detail_Commandes_{c_period}.pdf"><button style="background-color:#6c757d;color:white;border:none;padding:12px;border-radius:8px;width:100%;font-weight:bold;cursor:pointer;">📑 Télécharger le Détail (PDF)</button></a>'
-            col_btn2.markdown(href_det, unsafe_allow_html=True)
+            pdf2 = generate_detail_pdf(client_data, df, mapping)
+            b64_2 = base64.b64encode(pdf2).decode()
+            b2.markdown(f'<a href="data:application/pdf;base64,{b64_2}" download="Detail_{c_period}.pdf"><button style="background-color:#6c757d;color:white;border:none;padding:15px;border-radius:10px;width:100%;font-weight:bold;cursor:pointer;">📑 TÉLÉCHARGER DÉTAIL</button></a>', unsafe_allow_html=True)
 
         except Exception as e:
-            st.error(f"Erreur de calcul sur les montants : {e}")
+            st.error(f"Erreur de calcul : {e}")
             
     except Exception as e:
-        st.error(f"Erreur de lecture du fichier : {e}")
-
-else:
-    st.info("👋 En attente d'un fichier CSV pour commencer...")
+        st.error(f"Erreur fichier : {e}")
