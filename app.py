@@ -10,7 +10,7 @@ import os
 YASSIR_PURPLE = "#6f42c1"  
 YASSIR_BLACK = "#000000"
 YASSIR_GRAY = "#F8F9FA"
-LOGO_PATH = "logo.jpg"  # Assurez-vous que votre fichier logo est dans le même dossier
+LOGO_PATH = "logo.png"  # Assurez-vous que votre fichier logo est dans le même dossier
 
 # --- SETUP PAGE ---
 st.set_page_config(page_title="Générateur Factures Yassir", page_icon="🟣", layout="wide")
