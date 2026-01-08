@@ -41,7 +41,7 @@ class PDFTemplate(FPDF):
             self.set_text_color(r, g, b)
             self.cell(50, 15, 'Yassir', 0, 0, 'L')
         
-        # B. ÉMETTEUR (YASSIR) - Aligné proprement
+        # B. ÉMETTEUR (YASSIR)
         self.set_xy(10, 28)
         self.set_font('Arial', 'B', 9)
         self.set_text_color(0) # Noir strict
@@ -51,8 +51,6 @@ class PDFTemplate(FPDF):
         self.cell(0, 4, 'VILLA 269 LOTISSEMENT MANDARONA', 0, 1, 'L')
         self.cell(0, 4, 'SIDI MAAROUF CASABLANCA - Maroc', 0, 1, 'L')
         self.cell(0, 4, 'ICE: 002148105000084', 0, 1, 'L')
-        
-        # PAS DE LIGNE ICI (Supprimée pour éviter de "casser" le fichier)
         self.ln(5)
 
     def footer(self):
@@ -61,7 +59,7 @@ class PDFTemplate(FPDF):
         self.set_text_color(120)
         self.multi_cell(0, 3, "YASSIR MAROC SARL au capital de 2,000,000 DH\nVILLA 269 LOTISSEMENT MANDARONA SIDI MAAROUF CASABLANCA - Maroc\nICE N°002148105000084 - RC 413733 - IF 26164744", 0, 'C')
         
-        # Pagination propre
+        # Pagination
         self.set_y(-10)
         r, g, b = hex_to_rgb(YASSIR_PURPLE)
         self.set_text_color(r, g, b)
@@ -75,33 +73,30 @@ def generate_invoice_pdf(client_data, totals):
     pdf.add_page()
     r, g, b = hex_to_rgb(YASSIR_PURPLE)
 
-    # 1. EN-TÊTE DROITE (INFOS FACTURE)
+    # 1. EN-TÊTE DROITE
     pdf.set_xy(110, 50)
     pdf.set_font('Arial', 'B', 14)
-    pdf.set_text_color(r, g, b) # Titre en Violet
+    pdf.set_text_color(r, g, b)
     pdf.cell(90, 8, "FACTURE COMMISSION", 0, 1, 'R')
     
     pdf.set_x(110)
     pdf.set_font('Arial', 'B', 10)
-    pdf.set_text_color(0) # Reste en Noir
+    pdf.set_text_color(0)
     pdf.cell(90, 6, f"N°: {client_data['ref']}", 0, 1, 'R')
     
     pdf.set_x(110)
     pdf.set_font('Arial', '', 10)
     pdf.cell(90, 6, f"Date: {datetime.now().strftime('%d/%m/%Y')}", 0, 1, 'R')
 
-    # 2. BLOC CLIENT (GAUCHE)
+    # 2. BLOC CLIENT
     start_y = 50
-    # Fond
     pdf.set_fill_color(248, 248, 248)
-    pdf.set_draw_color(230, 230, 230) # Bordure GRISE (pas bleue/violette)
+    pdf.set_draw_color(230, 230, 230)
     pdf.rect(10, start_y, 90, 35, 'FD')
     
-    # Petite barre déco violette
     pdf.set_fill_color(r, g, b)
     pdf.rect(10, start_y, 2, 35, 'F')
     
-    # Texte Client
     pdf.set_xy(15, start_y + 3)
     pdf.set_font('Arial', 'B', 10)
     pdf.set_text_color(0)
@@ -121,10 +116,8 @@ def generate_invoice_pdf(client_data, totals):
 
     # 3. TABLEAU
     pdf.set_y(100)
-    
-    # Header Tableau (Fond Violet)
     pdf.set_fill_color(r, g, b)
-    pdf.set_draw_color(r, g, b) # Bordure violette pour header uniquement
+    pdf.set_draw_color(r, g, b)
     pdf.set_text_color(255)
     pdf.set_font('Arial', 'B', 9)
     
@@ -135,8 +128,7 @@ def generate_invoice_pdf(client_data, totals):
         pdf.cell(cols[i], 10, h, 1, 0, 'C', 1)
     pdf.ln()
     
-    # Contenu Tableau (Bordures GRISES/NOIRES)
-    pdf.set_draw_color(200, 200, 200) # IMPORTANT : Gris clair pour les lignes
+    pdf.set_draw_color(200, 200, 200)
     pdf.set_text_color(0)
     pdf.set_font('Arial', '', 9)
     
@@ -154,12 +146,11 @@ def generate_invoice_pdf(client_data, totals):
         pdf.set_x(x_totals)
         pdf.set_font('Arial', 'B' if bold else '', 9)
         pdf.set_text_color(0)
-        pdf.set_draw_color(200) # Sécurité couleur ligne
+        pdf.set_draw_color(200)
         
         if bg:
             pdf.set_fill_color(r, g, b)
             pdf.set_text_color(255)
-            # Pas de bordure pour le bloc coloré
             pdf.cell(50, 8, label, 0, 0, 'L', 1)
             pdf.cell(40, 8, f"{value:,.2f} DH", 0, 1, 'R', 1)
         else:
@@ -188,16 +179,14 @@ def generate_detail_pdf(client_data, df_detail, mapping):
     pdf.add_page()
     r, g, b = hex_to_rgb(YASSIR_PURPLE)
 
-    # Titre
     pdf.set_y(55)
     pdf.set_font('Arial', 'B', 14)
     pdf.set_text_color(r, g, b)
     pdf.cell(0, 10, f"DÉTAIL DES COMMANDES - {client_data['period']}", 0, 1, 'C')
     pdf.ln(5)
 
-    # Header Tableau
     pdf.set_fill_color(240, 240, 240)
-    pdf.set_draw_color(200) # Bordure grise
+    pdf.set_draw_color(200)
     pdf.set_font('Arial', 'B', 8)
     pdf.set_text_color(0)
     
@@ -211,12 +200,10 @@ def generate_detail_pdf(client_data, df_detail, mapping):
         pdf.cell(w[i], 8, c, 1, 0, 'C', 1)
     pdf.ln()
 
-    # Body
     pdf.set_font('Arial', '', 8)
-    pdf.set_draw_color(220) # Bordure très légère pour le contenu
+    pdf.set_draw_color(220)
     
     for _, row in df_detail.iterrows():
-        # Parsing
         date_val = str(row[mapping['date']])[:10]
         id_val = str(row[mapping['id']])
         try:
@@ -260,7 +247,14 @@ uploaded_file = st.file_uploader("📂 Importez votre fichier CSV (Détail Comma
 
 if uploaded_file:
     try:
-        df = pd.read_csv(uploaded_file, sep=None, engine='python')
+        # --- CORRECTION DE L'ERREUR UTF-8 ICI ---
+        try:
+            df = pd.read_csv(uploaded_file, sep=None, engine='python')
+        except UnicodeDecodeError:
+            uploaded_file.seek(0)
+            df = pd.read_csv(uploaded_file, sep=None, engine='python', encoding='latin-1')
+        # ----------------------------------------
+
         st.success(f"Fichier chargé : {len(df)} lignes.")
         
         st.subheader("🔗 Mapping des Colonnes")
@@ -272,8 +266,12 @@ if uploaded_file:
         col_stat = c4.selectbox("Statut (Opt.)", ["Aucun"] + cols)
 
         # Calculs
-        clean_s = df[col_amt].astype(str).str.replace('MAD','').str.replace(' ','').str.replace(',','.')
-        df['clean_amount'] = pd.to_numeric(clean_s, errors='coerce').fillna(0)
+        try:
+            clean_s = df[col_amt].astype(str).str.replace('MAD','').str.replace(' ','').str.replace(',','.')
+            df['clean_amount'] = pd.to_numeric(clean_s, errors='coerce').fillna(0)
+        except Exception:
+            df['clean_amount'] = 0
+
         total_sales = df['clean_amount'].sum()
         comm_ht = total_sales * (c_rate / 100)
         tva = comm_ht * 0.20
@@ -303,4 +301,4 @@ if uploaded_file:
         b2.markdown(f'<a href="data:application/pdf;base64,{b64_2}" download="Detail_{c_period}.pdf"><button style="background-color:#6c757d;color:white;border:none;padding:15px;border-radius:10px;width:100%;font-weight:bold;cursor:pointer;">📑 DÉTAIL</button></a>', unsafe_allow_html=True)
 
     except Exception as e:
-        st.error(f"Erreur : {e}")
+        st.error(f"Erreur globale : {e}")
